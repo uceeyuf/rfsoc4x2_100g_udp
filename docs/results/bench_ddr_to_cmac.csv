@@ -1,0 +1,5 @@
+step,mode,mig_rd_gbps,mig_wr_gbps,core_out_gbps,wait_pct,cmac_gbps
+1,DDR read -> sink,119.02,0.00,119.02,7.01,0.00
+2,DDR read + write -> sink,113.85,4.00,113.85,11.06,0.00
+3,DDR read -> UDP -> CMAC,98.94,0.00,98.94,0.00,99.71
+4,DDR read + write -> UDP,98.94,4.00,98.94,0.00,99.71

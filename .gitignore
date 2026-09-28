@@ -1,0 +1,13 @@
+# Vivado project / outputs (recreate with scripts/create_project.tcl)
+build/
+.Xil/
+*.jou
+*.log
+*.str
+webtalk*
+vivado_pid*.zip
+# host programs and their outputs
+host/dpdk_loopback/dpdk_loopback
+host/dpdk_stream_rx/dpdk_stream_rx
+out_*/
+host/dpdk_loopback/*/

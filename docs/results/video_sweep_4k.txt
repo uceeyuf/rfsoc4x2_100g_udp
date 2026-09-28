@@ -1,0 +1,38 @@
+FPGA 192.168.100.128 (+0..15) port 1234, 16 flows   payload 8956 B   2779 packets/frame   10 s per step   (DPDK, 4 TX / 8 RX cores, 4096 RX descriptors, inline compare, stored reference)
+3840x2160 @ 120 fps  frames  1200 sent  1200 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 23.93 / RX 23.93 Gbps   latency 8.4 / 8.5 ms
+    tx: schedule slip 0.1 ms   rx: late 1 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 417600 [f0 f2] q1 417600 [f1 f3] q2 415200 [f12 f14] q3 415200 [f13 f15] q4 417600 [f4 f6] q5 417600 [f5 f7] q6 417600 [f8 f10] q7 416400 [f9 f11]
+3840x2160 @ 160 fps  frames  1600 sent  1600 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 31.91 / RX 31.91 Gbps   latency 6.3 / 6.3 ms
+    tx: schedule slip 0.1 ms   rx: late 1 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 556800 [f0 f2] q1 556800 [f1 f3] q2 553600 [f12 f14] q3 553600 [f13 f15] q4 556800 [f4 f6] q5 556800 [f5 f7] q6 556800 [f8 f10] q7 555200 [f9 f11]
+3840x2160 @ 200 fps  frames  2000 sent  2000 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 39.88 / RX 39.88 Gbps   latency 5.0 / 7.4 ms
+    tx: schedule slip 0.1 ms   rx: late 1 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 696000 [f0 f2] q1 696000 [f1 f3] q2 692000 [f12 f14] q3 692000 [f13 f15] q4 696000 [f4 f6] q5 696000 [f5 f7] q6 696000 [f8 f10] q7 694000 [f9 f11]
+3840x2160 @ 240 fps  frames  2400 sent  2400 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 47.86 / RX 47.86 Gbps   latency 4.2 / 4.2 ms
+    tx: schedule slip 0.1 ms   rx: late 2 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 835200 [f0 f2] q1 835200 [f1 f3] q2 830400 [f12 f14] q3 830400 [f13 f15] q4 835200 [f4 f6] q5 835200 [f5 f7] q6 835200 [f8 f10] q7 832800 [f9 f11]
+3840x2160 @ 280 fps  frames  2800 sent  2800 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 55.84 / RX 55.84 Gbps   latency 3.6 / 3.7 ms
+    tx: schedule slip 0.0 ms   rx: late 6 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 974400 [f0 f2] q1 974400 [f1 f3] q2 968800 [f12 f14] q3 968800 [f13 f15] q4 974400 [f4 f6] q5 974400 [f5 f7] q6 974400 [f8 f10] q7 971600 [f9 f11]
+3840x2160 @ 320 fps  frames  3200 sent  3200 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 63.81 / RX 63.81 Gbps   latency 3.6 / 4.0 ms
+    tx: schedule slip 0.9 ms   rx: late 2 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1113600 [f0 f2] q1 1113600 [f1 f3] q2 1107200 [f12 f14] q3 1107200 [f13 f15] q4 1113600 [f4 f6] q5 1113600 [f5 f7] q6 1113600 [f8 f10] q7 1110400 [f9 f11]
+3840x2160 @ 360 fps  frames  3600 sent  3600 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 71.65 / RX 71.65 Gbps   latency 11.8 / 22.9 ms
+    tx: schedule slip 20.1 ms   rx: late 5 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1252800 [f0 f2] q1 1252800 [f1 f3] q2 1245600 [f12 f14] q3 1245600 [f13 f15] q4 1252800 [f4 f6] q5 1252800 [f5 f7] q6 1252800 [f8 f10] q7 1249200 [f9 f11]
+3840x2160 @ 400 fps  frames  4000 sent  4000 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 61.79 / RX 61.79 Gbps   latency 1465.0 / 2926.1 ms
+    tx: schedule slip 2909.0 ms   rx: late 10382 (drain 8.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1392000 [f0 f2] q1 1392000 [f1 f3] q2 1384000 [f12 f14] q3 1384000 [f13 f15] q4 1392000 [f4 f6] q5 1392000 [f5 f7] q6 1392000 [f8 f10] q7 1388000 [f9 f11]
+Ceiling: 3840x2160 @ 360 fps, 71.65 Gbps each way, all frames intact
+
+FPGA 192.168.100.128 (+0..15) port 1234, 16 flows   payload 8956 B   2779 packets/frame   10 s per step   (DPDK, 4 TX / 8 RX cores, 4096 RX descriptors, inline compare, generated reference)
+3840x2160 @ 400 fps  frames  4000 sent  4000 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 79.77 / RX 79.77 Gbps   latency 2.5 / 2.7 ms
+    tx: schedule slip 0.1 ms   rx: late 2 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1392000 [f0 f2] q1 1392000 [f1 f3] q2 1384000 [f12 f14] q3 1384000 [f13 f15] q4 1392000 [f4 f6] q5 1392000 [f5 f7] q6 1392000 [f8 f10] q7 1388000 [f9 f11]
+3840x2160 @ 440 fps  frames  4400 sent  4400 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 87.74 / RX 87.74 Gbps   latency 2.3 / 5.2 ms
+    tx: schedule slip 0.1 ms   rx: late 82 (drain 0.1 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1531200 [f0 f2] q1 1531200 [f1 f3] q2 1522400 [f12 f14] q3 1522400 [f13 f15] q4 1531200 [f4 f6] q5 1531200 [f5 f7] q6 1531200 [f8 f10] q7 1526800 [f9 f11]
+3840x2160 @ 480 fps  frames  4800 sent  4800 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 79.33 / RX 79.33 Gbps   latency 1036.0 / 2080.9 ms
+    tx: schedule slip 2066.7 ms   rx: late 6831 (drain 5.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1670400 [f0 f2] q1 1670400 [f1 f3] q2 1660800 [f12 f14] q3 1660800 [f13 f15] q4 1670400 [f4 f6] q5 1670400 [f5 f7] q6 1670400 [f8 f10] q7 1665600 [f9 f11]
+Ceiling: 3840x2160 @ 440 fps, 87.74 Gbps each way, all frames intact
