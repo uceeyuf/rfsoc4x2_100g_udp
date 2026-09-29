@@ -27,7 +27,7 @@ if {[get_property PROGRESS $synth] ne "100%" || [get_property NEEDS_REFRESH $syn
 
 # On Windows the MIG PHY re-synthesis inside opt_design occasionally fails with
 # "couldn't read file .../unimacro_verilog.tcl" (tool file access race), so retry.
-for {set attempt 1} {$attempt <= 5} {incr attempt} {
+for {set attempt 1} {$attempt <= 3} {incr attempt} {
     reset_run impl_1
     launch_runs impl_1 -to_step write_bitstream -jobs $jobs
     if {[catch {wait_on_run impl_1}]} {}

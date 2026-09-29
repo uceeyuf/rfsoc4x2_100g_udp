@@ -3,7 +3,7 @@
 //
 // RFSoC 4x2 100G core: 512-bit datapath end to end.
 //
-//   DDR4-2400 64-bit -> MIG 512b @ 300 MHz -> async FIFO -> 512b @ 250 MHz (128 Gbps)
+//   DDR4-2000 64-bit -> MIG 512b @ 250 MHz -> async FIFO -> 512b @ 250 MHz (128 Gbps)
 //     -> record_eth_tx (complete UDP frames) --+
 //        udp_stack (ARP, ping, UDP echo) ------+-> arb mux -> async FIFO -> CMAC 512b @ 322 MHz
 //

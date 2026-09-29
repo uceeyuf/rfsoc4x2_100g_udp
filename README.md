@@ -24,7 +24,7 @@ Built on Alex Forencich's [verilog-ethernet](https://github.com/alexforencich/ve
 ## Technical Features
 
 * **512 bit @ 250 MHz** (128 Gbps) from the DDR4 read port through the UDP/IP stack; 28 % above the 100GbE line rate, so the per-packet idle cycles of the 512-bit stack never limit a 100G echo. The IPv4 header checksum is summed in an input register stage of `ip_eth_rx_512`, which closes timing at 250 MHz.
-* **DDR4 is not the limit**: DDR4-2400, 64 bit (153.6 Gbps peak, MIG 512 bit @ 300 MHz) reads at the full 128 Gbps of the core side, also while 4 Gbps of DDS data are written at the same time (DDR4-2000: 113.9 Gbps).
+* **DDR4 is not the limit**: DDR4-2000, 64 bit (128 Gbps peak) reads 113.9 Gbps while 4 Gbps of DDS data are written at the same time.
 * **Data plane separate from control plane**: `record_eth_tx` builds complete Ethernet/IPv4/UDP frames. The 42-byte headers plus a 22-byte record header fill exactly the first 64-byte beat, so the DDR data follow unshifted: 129 beats per 8 KB packet, no idle cycle. ARP, ping and UDP echo go through the verilog-ethernet stack; both are merged in front of the MAC.
 * **Record integrity**: DDR writes stop only at record boundaries, and reads still in flight are drained when the stream stops, so `start_index = 0` is always sample 0 of a record.
 * **Multi-flow**: up to 31 flows rotating UDP ports and source IP (RSS spreading), runtime packet gap. Besides `192.168.100.1` the FPGA answers ARP and UDP echo on the alias addresses `.128`–`.159` and replies from the address a packet was sent to, so echo flows spread over the receive queues of the PC.
@@ -36,18 +36,16 @@ Built on Alex Forencich's [verilog-ethernet](https://github.com/alexforencich/ve
 
 Host: Core Ultra 7 265K, Mellanox ConnectX-4 (PCIe 3.0 x16), Ubuntu 24.04, DPDK 24.11.3 (mlx5 PMD).
 
-FPGA side (`tests/bench.tcl`, VIO counters), PL DDR4-2400, calibration passes every stage at tCK 833 ps:
+FPGA side (`tests/bench.tcl`, VIO counters):
 
 | Test                                       | MIG read    | MIG write | Wait for DDR | Into the CMAC  |
 | :----------------------------------------- | :---------: | :-------: | :----------: | :------------: |
-| DDR4 read → discarded at 250 MHz           | **128.00 Gbps** | 0     | 0 %          | –              |
-| DDR4 read + write → discarded              | **128.00 Gbps** | 4.00 Gbps | 0 %      | –              |
+| DDR4 read → discarded at 250 MHz           | 119.02 Gbps | 0         | 7.0 %        | –              |
+| DDR4 read + write → discarded              | 113.85 Gbps | 4.00 Gbps | 11.1 %       | –              |
 | DDR4 read → `record_eth_tx` → CMAC         | 98.94 Gbps  | 0         | 0 %          | **99.71 Gbps** |
 | DDR4 read + write → `record_eth_tx` → CMAC | 98.94 Gbps  | 4.00 Gbps | 0 %          | **99.71 Gbps** |
 
-With DDR4-2000 the first two rows were 119.02 / 113.85 Gbps with 7.0 / 11.1 % of the cycles waiting for DDR; at 2400 the read side is limited only by the 512-bit, 250 MHz core clock.
-
-PC side, measured with the DDR4-2000 build (the rate into the CMAC is the same at 2400) (`host/dpdk_stream_rx`, 8 receive cores; 16 flows with source-IP rotation, jumbo packets; every sample compared with its index): **99.20 Gbit/s of UDP payload (1.51 Mpps) for 74 s: 111,624,579 packets, none with a wrong sample**; 16 packets (1.4 × 10⁻⁷) missing, all of them discarded at the NIC port in one burst (`rx_phy_discard_packets`), none in the FPGA or the receive cores.
+PC side (`host/dpdk_stream_rx`, 8 receive cores; 16 flows with source-IP rotation, jumbo packets; every sample compared with its index): **99.20 Gbit/s of UDP payload (1.51 Mpps) for 74 s: 111,624,579 packets, none with a wrong sample**; 16 packets (1.4 × 10⁻⁷) missing, all of them discarded at the NIC port in one burst (`rx_phy_discard_packets`), none in the FPGA or the receive cores.
 
 4K video loopback (`host/dpdk_loopback`, 3840x2160 RGB24, 16 flows to the alias addresses, 4 transmit / 8 receive cores, 10 s per rate, every frame reassembled and compared byte by byte):
 
@@ -64,7 +62,7 @@ PC side, measured with the DDR4-2000 build (the rate into the CMAC is the same a
 | :---------------------------------------------------------------: |
 | **Figure2** : a sent 4K frame and its echo at 360 fps (identical) |
 
-Functional: ping 4/4; UDP echo 2 × 2000 packets byte-exact (`tests/loopback_test.py`); stream stopped and restarted 5 times, 3000 packets each, every sample matches its header (`tests/restart_check.tcl`); stack testbench all passing, 130 cycles per 129-beat stream frame. Timing met (250 MHz core, 300 MHz MIG): WNS +0.167 ns, WHS +0.012 ns. Raw data: [docs/results](./docs/results).
+Functional: ping 4/4; UDP echo 2 × 2000 packets byte-exact (`tests/loopback_test.py`); stream stopped and restarted 5 times, 3000 packets each, every sample matches its header (`tests/restart_check.tcl`); stack testbench all passing, 130 cycles per 129-beat stream frame. Timing met at 250 MHz: WNS +0.126 ns, WHS +0.010 ns. Raw data: [docs/results](./docs/results).
 
 　
 
@@ -165,7 +163,7 @@ BSD 3-Clause (Copyright (c) 2026, Yijie Yu). verilog-ethernet and the files carr
 ## 技术特点
 
 * **512 bit @ 250 MHz**（128 Gbps），从 DDR4 读口一直到 UDP/IP 协议栈；比 100GbE 线速高 28%，512 位协议栈每包的空闲周期不再限制 100G 回环。IPv4 头校验和在 `ip_eth_rx_512` 的输入寄存器级中求和，使 250 MHz 时序收敛。
-* **DDR4 不是瓶颈**：DDR4-2400、64 位（峰值 153.6 Gbps，MIG 512 bit @ 300 MHz），同时写入 4 Gbps DDS 数据时读出也能跑满核心侧的 128 Gbps（DDR4-2000 时为 113.9 Gbps）。
+* **DDR4 不是瓶颈**：DDR4-2000、64 位（峰值 128 Gbps）在同时写入 4 Gbps DDS 数据的情况下读出 113.9 Gbps。
 * **数据面与控制面分离**：`record_eth_tx` 直接生成完整的 Ethernet/IPv4/UDP 帧。42 字节网络头加 22 字节记录头正好填满第一个 64 字节 beat，DDR 数据无需移位：每个 8 KB 包 129 个 beat，没有空闲周期。ARP、ping 和 UDP 回环走 verilog-ethernet 协议栈，两者在 MAC 前仲裁合并。
 * **记录完整性**：DDR 写入只在记录边界停止；数据流停止时会排空仍在途的读请求，因此 `start_index = 0` 一定是记录的第 0 个样本。
 * **多 flow**：最多 31 条 flow，轮换 UDP 端口和源 IP（分散到 RSS 队列）；包间隔可在线调整。除 `192.168.100.1` 外，FPGA 还在别名地址 `.128`–`.159` 上应答 ARP 和 UDP 回环，并从包的目的地址回复，回环 flow 因此能分散到 PC 的多个接收队列。
@@ -177,18 +175,16 @@ BSD 3-Clause (Copyright (c) 2026, Yijie Yu). verilog-ethernet and the files carr
 
 主机：Core Ultra 7 265K，Mellanox ConnectX-4（PCIe 3.0 x16），Ubuntu 24.04，DPDK 24.11.3（mlx5 PMD）。
 
-FPGA 端（`tests/bench.tcl`，VIO 计数器），PL DDR4-2400，校准各阶段在 tCK 833 ps 下全部通过：
+FPGA 端（`tests/bench.tcl`，VIO 计数器）：
 
 | 测试                                       | MIG 读      | MIG 写    | 等待 DDR | 进入 CMAC      |
 | :----------------------------------------- | :---------: | :-------: | :------: | :------------: |
-| DDR4 读 → 250 MHz 端直接丢弃             | **128.00 Gbps** | 0     | 0 %      | –              |
-| DDR4 读 + 写 → 丢弃                        | **128.00 Gbps** | 4.00 Gbps | 0 %  | –              |
+| DDR4 读 → 250 MHz 端直接丢弃             | 119.02 Gbps | 0         | 7.0 %    | –              |
+| DDR4 读 + 写 → 丢弃                        | 113.85 Gbps | 4.00 Gbps | 11.1 %   | –              |
 | DDR4 读 → `record_eth_tx` → CMAC           | 98.94 Gbps  | 0         | 0 %      | **99.71 Gbps** |
 | DDR4 读 + 写 → `record_eth_tx` → CMAC      | 98.94 Gbps  | 4.00 Gbps | 0 %      | **99.71 Gbps** |
 
-DDR4-2000 时前两行为 119.02 / 113.85 Gbps，分别有 7.0 / 11.1 % 的周期在等待 DDR；2400 下读出只受 512 位、250 MHz 核心时钟限制。
-
-PC 端为 DDR4-2000 版本的测量（进入 CMAC 的速率在 2400 下不变）（`host/dpdk_stream_rx`，8 个接收核；16 条 flow 并轮换源 IP，巨帧；每个样本与其序号比对）：**74 s 内 UDP 负载 99.20 Gbit/s（1.51 Mpps）：111,624,579 个包，没有一个样本出错**；缺 16 个包（1.4 × 10⁻⁷），全部是网卡物理端口一次性丢弃的（`rx_phy_discard_packets`），FPGA 和接收核都没有丢包。
+PC 端（`host/dpdk_stream_rx`，8 个接收核；16 条 flow 并轮换源 IP，巨帧；每个样本与其序号比对）：**74 s 内 UDP 负载 99.20 Gbit/s（1.51 Mpps）：111,624,579 个包，没有一个样本出错**；缺 16 个包（1.4 × 10⁻⁷），全部是网卡物理端口一次性丢弃的（`rx_phy_discard_packets`），FPGA 和接收核都没有丢包。
 
 4K 视频回环（`host/dpdk_loopback`，3840x2160 RGB24，16 条 flow 发往别名地址，4 个发送核 / 8 个接收核，每个帧率 10 s，每一帧重组后逐字节比对）：
 
@@ -205,7 +201,7 @@ PC 端为 DDR4-2000 版本的测量（进入 CMAC 的速率在 2400 下不变）
 | :-----------------------------------------------------: |
 | **图2** : 发送的一帧 4K 画面与 360 fps 下的回环（完全一致） |
 
-功能：ping 4/4；UDP 回环 2 × 2000 包逐字节一致（`tests/loopback_test.py`）；数据流停止并重启 5 次，每次 3000 包，所有样本与包头一致（`tests/restart_check.tcl`）；协议栈仿真全部通过，每个 129 beat 的数据流帧用 130 个周期。时序满足（核心 250 MHz、MIG 300 MHz）：WNS +0.167 ns，WHS +0.012 ns。原始数据：[docs/results](./docs/results)。
+功能：ping 4/4；UDP 回环 2 × 2000 包逐字节一致（`tests/loopback_test.py`）；数据流停止并重启 5 次，每次 3000 包，所有样本与包头一致（`tests/restart_check.tcl`）；协议栈仿真全部通过，每个 129 beat 的数据流帧用 130 个周期。250 MHz 时序收敛：WNS +0.126 ns，WHS +0.010 ns。原始数据：[docs/results](./docs/results)。
 
 　
 
