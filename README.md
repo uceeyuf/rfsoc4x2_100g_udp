@@ -117,6 +117,24 @@ Simulation: `sim/run_udp_stack.sh` (Icarus Verilog) or `sim/run_udp_stack_xsim.s
 
 　
 
+## Citation
+
+If this work helps your research, please cite it:
+
+```bibtex
+@misc{yu2026rfsoc4x2_100g,
+    author = {Yijie Yu},
+    title = {{RFSoC 4x2 100G UDP over QSFP28}},
+    year = {2026},
+    howpublished = {\url{https://github.com/uceeyuf/rfsoc4x2_100g_udp}},
+    note = {GitHub repository},
+}
+```
+
+GitHub also offers the citation under **Cite this repository** (from [CITATION.cff](CITATION.cff)).
+
+　
+
 ## License
 
 BSD 3-Clause (Copyright (c) 2026, Yijie Yu). verilog-ethernet and the files carrying Alex Forencich's copyright header remain under the MIT license.
@@ -235,6 +253,24 @@ sudo host/dpdk_loopback/dpdk_loopback -l 0-12 -a 0000:02:00.0 -- --ref gen --fps
 ```
 
 仿真：`sim/run_udp_stack.sh`（Icarus Verilog）或 `sim/run_udp_stack_xsim.sh`（Vivado 仿真器）：ARP、ping、反压下的回环突发，数据流的包头 / 序号 / 数据 / 吞吐；`sim/run_stack_tests.sh`（rtl/stack 各模块）。
+
+　
+
+## 引用
+
+如果这个项目对你的研究有帮助，请引用：
+
+```bibtex
+@misc{yu2026rfsoc4x2_100g,
+    author = {Yijie Yu},
+    title = {{RFSoC 4x2 100G UDP over QSFP28}},
+    year = {2026},
+    howpublished = {\url{https://github.com/uceeyuf/rfsoc4x2_100g_udp}},
+    note = {GitHub repository},
+}
+```
+
+GitHub 仓库页的 **Cite this repository** 也提供同样的引用（来自 [CITATION.cff](CITATION.cff)）。
 
 　
 
