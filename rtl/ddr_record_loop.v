@@ -17,10 +17,10 @@
 //   MM2S 只用 AXI 读通道、S2MM 只用写通道，二者直接拼到 MIG 单个 S_AXI，无需 Interconnect。
 //
 //   ★ 时钟域：clk_wr=125M(DDS/写打包，DDS 保持 125 MSps / 5 MHz)，
-//     ui_clk=250M(MIG AXI/DataMover)，clk=250M(读出 512bit 流 → UDP 发送，512b×250M=128Gbps)。
+//     ui_clk=300M(MIG AXI/DataMover，DDR4-2400)，clk=250M(读出 512bit 流 → UDP 发送，512b×250M=128Gbps)。
 //     跨域全部经 axis_async_fifo_adapter，单比特电平信号(trig/calib/no_write)用两级 ASYNC_REG 同步。
 //     两条命令 FSM 在 ui_clk 域；读命令最多 2 条在途。
-//   ★ 带宽：DDR4-2000 峰值 128 Gbps；读 ≤128 + 写 4 Gbps。rd/wr_beats_per_s 给出实测握手拍数。
+//   ★ 带宽：DDR4-2400 峰值 153.6 Gbps；读 ≤128 + 写 4 Gbps。rd/wr_beats_per_s 给出实测握手拍数。
 //
 //   ★ 注意：读写并发访问同一 4MB ring，DDS 又是周期正弦，读到的段可能新旧交错(撕裂)；
 //     对平稳正弦显示无碍，序号(index)对齐仍成立。
@@ -83,7 +83,7 @@ module ddr_record_loop #(
     //=========================================================================
     // MIG 输出时钟/复位
     //=========================================================================
-    wire        ui_clk;                 // 250MHz
+    wire        ui_clk;                 // 300MHz (DDR4-2400)
     wire        ui_clk_sync_rst;        // 高有效
     wire        calib_done;
     assign init_calib_complete = calib_done;
@@ -450,12 +450,12 @@ module ddr_record_loop #(
     );
 
     //=========================================================================
-    // 每秒计数（ui_clk = 250 MHz）：MIG 读 / 写握手拍数
+    // 每秒计数（ui_clk = 300 MHz）：MIG 读 / 写握手拍数
     //=========================================================================
-    rate_counter #(.CLK_HZ(250000000)) u_rd_rate (
+    rate_counter #(.CLK_HZ(300000000)) u_rd_rate (
         .clk(ui_clk), .rst(ui_clk_sync_rst), .inc(mm2s_rvalid & mm2s_rready), .rate(rd_beats_per_s)
     );
-    rate_counter #(.CLK_HZ(250000000)) u_wr_rate (
+    rate_counter #(.CLK_HZ(300000000)) u_wr_rate (
         .clk(ui_clk), .rst(ui_clk_sync_rst), .inc(s2mm_wvalid & s2mm_wready), .rate(wr_beats_per_s)
     );
 

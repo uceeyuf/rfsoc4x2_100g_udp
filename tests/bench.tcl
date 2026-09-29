@@ -75,7 +75,7 @@ set_out tx_speed_en 0
 set_out bench_ctrl 0
 set_out tx_length 0
 
-puts "\n==================== DDR4-2000 -> 100G benchmark (${secs} s per step) ===================="
+puts "\n==================== DDR4-2400 -> 100G benchmark (${secs} s per step) ===================="
 puts [format "%-4s %-28s %10s %10s %12s %10s %12s" step mode "MIG rd" "MIG wr" "core out" "wait %" "CMAC"]
 puts [format "%-4s %-28s %10s %10s %12s %10s %12s" "" "" "(Gbps)" "(Gbps)" "(Gbps)" "" "(Gbps)"]
 foreach r $rows { puts [format "%-4s %-28s %10s %10s %12s %10s %12s" {*}$r] }
