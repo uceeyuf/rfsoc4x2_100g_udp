@@ -1,0 +1,11 @@
+== 2026-09-29 23:27:19  269a6d9 DDR4-2400 on the Linux / DPDK host: 99.20 Gbit/s for 60 s with no loss, 4K440 at 2.4 / 2.5 ms
+generating 20 frames of 3840x2160 ...
+link up, 100000 Mbps
+FPGA MAC 02:00:00:00:00:00
+all 16 flows echo
+FPGA 192.168.100.128 (+0..15) port 1234, 16 flows   payload 8956 B   2779 packets/frame   10 s per step   (DPDK, 4 TX / 8 RX cores, 4096 RX descriptors, inline compare, stored reference)
+3840x2160 @ 360 fps  frames  3600 sent  3600 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 71.79 / RX 71.79 Gbps   latency 3.1 / 3.9 ms
+    tx: schedule slip 0.6 ms   rx: late 2 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1252800 [f0 f2] q1 1252800 [f1 f3] q2 1245600 [f12 f14] q3 1245600 [f13 f15] q4 1252800 [f4 f6] q5 1252800 [f5 f7] q6 1252800 [f8 f10] q7 1249200 [f9 f11]
+Ceiling: 3840x2160 @ 360 fps, 71.79 Gbps each way, all frames intact
+sent.ppm / received.ppm: frame 1800 of the 360 fps run

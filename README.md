@@ -15,9 +15,15 @@ Built on Alex Forencich's [verilog-ethernet](https://github.com/alexforencich/ve
 
 　
 
+| ![video](./docs/img/video_4k360.gif) |
+| :----------------------------------: |
+| **Figure1** : 4K360 through the FPGA echo on the board: the frame being sent (left) and the echoed frame as received (right), every frame compared byte by byte, 71.8 Gbps each way |
+
+　
+
 | ![arch](./docs/img/arch_100g.svg) |
 | :-------------------------------: |
-| **Figure1** : 100G data path      |
+| **Figure2** : 100G data path      |
 
 　
 
@@ -49,20 +55,16 @@ With DDR4-2000 the first two rows were 119.02 / 113.85 Gbps with 7.0 / 11.1 % of
 
 PC side (`host/dpdk_stream_rx`, 8 receive cores; 16 flows with source-IP rotation, jumbo packets; every sample compared with its index): **99.20 Gbit/s of UDP payload (1.51 Mpps) for 60 s: 90,508,819 packets, none lost, none with a wrong sample, none dropped at the NIC port**.
 
-4K video loopback (`host/dpdk_loopback`, 3840x2160 RGB24, 16 flows to the alias addresses, 4 transmit / 8 receive cores, 10 s per rate, every frame reassembled and compared byte by byte; the echo does not go through the DDR4, 4K440 is from the DDR4-2400 build, the lower rates from the DDR4-2000 build):
+4K video loopback (`host/dpdk_loopback`, 3840x2160 RGB24, 16 flows to the alias addresses, 4 transmit / 8 receive cores, 10 s per rate, every frame reassembled and compared byte by byte; the echo does not go through the DDR4; 4K360 and 4K440 are from the DDR4-2400 build, 4K120 / 4K240 from the DDR4-2000 build):
 
 | Frame rate | Gbps each way | Frames intact   | Packets lost | Latency avg / max |
 | :--------: | :-----------: | :-------------: | :----------: | :---------------: |
 | 4K120      | 23.93         | 1200 / 1200     | 0            | 8.4 / 8.5 ms      |
 | 4K240      | 47.86         | 2400 / 2400     | 0            | 4.2 / 4.2 ms      |
-| **4K360**  | **71.65**     | **3600 / 3600** | **0**        | 11.8 / 22.9 ms    |
+| **4K360**  | **71.79**     | **3600 / 3600** | **0**        | 3.1 / 3.9 ms      |
 | **4K440** ¹ | **87.74**    | **4400 / 4400** | **0**        | 2.4 / 2.5 ms      |
 
 ¹ with a reference computed from frame id and byte offset (`--ref gen`), so the host compares without reading the stored frames from memory; up to 4K360 the stored frames themselves are compared. Above these rates the frames still come back intact but the host cannot send them on schedule.
-
-| ![4k](./docs/img/4k_sent_received.png)                            |
-| :---------------------------------------------------------------: |
-| **Figure2** : a sent 4K frame and its echo at 360 fps (identical) |
 
 Functional: ping 4/4; UDP echo 2 × 2000 packets byte-exact (`tests/loopback_test.py`); stream stopped and restarted 5 times, 3000 packets each, every sample matches its header (`tests/restart_check.tcl`); stack testbench all passing, 130 cycles per 129-beat stream frame. Timing met (250 MHz core, 300 MHz MIG): WNS +0.078 ns, WHS +0.011 ns. Raw data: [docs/results](./docs/results).
 
@@ -156,9 +158,15 @@ BSD 3-Clause (Copyright (c) 2026, Yijie Yu). verilog-ethernet and the files carr
 
 　
 
+| ![video](./docs/img/video_4k360.gif) |
+| :----------------------------------: |
+| **图1** : 4K360 经板上 FPGA 回环：左边是正在发送的帧，右边是收回的回环帧，每一帧逐字节比对，每方向 71.8 Gbps |
+
+　
+
 | ![arch](./docs/img/arch_100g.svg) |
 | :-------------------------------: |
-| **图1** : 100G 数据通路            |
+| **图2** : 100G 数据通路            |
 
 　
 
@@ -190,20 +198,16 @@ DDR4-2000 时前两行为 119.02 / 113.85 Gbps，分别有 7.0 / 11.1 % 的周�
 
 PC 端（`host/dpdk_stream_rx`，8 个接收核；16 条 flow 并轮换源 IP，巨帧；每个样本与其序号比对）：**60 s 内 UDP 负载 99.20 Gbit/s（1.51 Mpps）：90,508,819 个包，没有丢包，没有一个样本出错，网卡物理端口也没有丢弃**。
 
-4K 视频回环（`host/dpdk_loopback`，3840x2160 RGB24，16 条 flow 发往别名地址，4 个发送核 / 8 个接收核，每个帧率 10 s，每一帧重组后逐字节比对；回环不经过 DDR4，4K440 为 DDR4-2400 版本的测量，较低帧率为 DDR4-2000 版本）：
+4K 视频回环（`host/dpdk_loopback`，3840x2160 RGB24，16 条 flow 发往别名地址，4 个发送核 / 8 个接收核，每个帧率 10 s，每一帧重组后逐字节比对；回环不经过 DDR4；4K360 和 4K440 为 DDR4-2400 版本的测量，4K120 / 4K240 为 DDR4-2000 版本）：
 
 | 帧率       | 单向 Gbps     | 完整帧          | 丢包   | 平均 / 最大延迟 |
 | :--------: | :-----------: | :-------------: | :----: | :-------------: |
 | 4K120      | 23.93         | 1200 / 1200     | 0      | 8.4 / 8.5 ms    |
 | 4K240      | 47.86         | 2400 / 2400     | 0      | 4.2 / 4.2 ms    |
-| **4K360**  | **71.65**     | **3600 / 3600** | **0**  | 11.8 / 22.9 ms  |
+| **4K360**  | **71.79**     | **3600 / 3600** | **0**  | 3.1 / 3.9 ms    |
 | **4K440** ¹ | **87.74**    | **4400 / 4400** | **0**  | 2.4 / 2.5 ms    |
 
 ¹ 使用由帧号和字节偏移计算出的参考（`--ref gen`），主机比对时无需从内存读取存储的帧；4K360 及以下直接比对存储的帧。更高帧率下帧仍完整返回，但主机无法按时发出。
-
-| ![4k](./docs/img/4k_sent_received.png)                  |
-| :-----------------------------------------------------: |
-| **图2** : 发送的一帧 4K 画面与 360 fps 下的回环（完全一致） |
 
 功能：ping 4/4；UDP 回环 2 × 2000 包逐字节一致（`tests/loopback_test.py`）；数据流停止并重启 5 次，每次 3000 包，所有样本与包头一致（`tests/restart_check.tcl`）；协议栈仿真全部通过，每个 129 beat 的数据流帧用 130 个周期。时序满足（核心 250 MHz、MIG 300 MHz）：WNS +0.078 ns，WHS +0.011 ns。原始数据：[docs/results](./docs/results)。
 

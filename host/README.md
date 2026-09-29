@@ -51,4 +51,12 @@ sudo env LD_LIBRARY_PATH=... dpdk_loopback/dpdk_loopback -l 0-12 -a 0000:02:00.0
 
 `dpdk_loopback`: `-l 0-12` = 1 main + 4 TX + 8 RX cores (`--txq`, `--rxq`); a sweep stops after two
 failed rates; `out_*/summary.txt` has one line per rate and the ceiling, `sent.ppm` / `received.ppm`
-are a frame and its echo at the highest passing rate. `dpdk_stream_rx`: `-l 0-8` = 1 main + 8 RX cores.
+are a frame and its echo at the highest passing rate.
+
+README GIF: `--gif 60` keeps 60 received frames (every 21st, from 1 s into the run, downscaled to
+480 wide) with the counters at their arrival; `make_gif.py` lays them out next to the sent frames:
+
+```sh
+sudo env LD_LIBRARY_PATH=... dpdk_loopback/dpdk_loopback -l 0-12 -a 0000:02:00.0 -- --ref stored --fps 360 --gif 60 --out gif_4k360
+python3 make_gif.py gif_4k360/gif ../docs/img/video_4k360.gif
+``` `dpdk_stream_rx`: `-l 0-8` = 1 main + 8 RX cores.

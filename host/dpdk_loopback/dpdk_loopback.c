@@ -26,8 +26,11 @@
 //     --catchup              a core that fell behind sends the missed packets back to back (default:
 //                            it shifts its schedule instead, catching up at most CATCHUP_US)
 //     --out dir              summary.txt, sent.ppm / received.ppm of the highest passing rate
+//     --gif N                also keep N received frames, every (cycle + 1)-th from 1 s into the run,
+//                            downscaled to 480 wide, with the counters at their arrival (out/gif/)
 
 #include <errno.h>
+#include "font.h"
 #include <inttypes.h>
 #include <math.h>
 #include <signal.h>
@@ -90,7 +93,8 @@ static struct {
     double spread, max_gbps, seconds, drain_idle_ms, drain_max_s;
     int fps[MAX_STEPS], nfps;
     bool sweep, light;               // light: RX cores only track which packets arrived (no copy, no compare)
-    bool gen, catchup;               // gen: payload is a pattern of frame id + offset; catchup: see header
+    bool gen, catchup;
+    int gif;               // gen: payload is a pattern of frame id + offset; catchup: see header
     bool one_ip;                     // every flow to the same FPGA address (flows differ in source port)
     char out[512];
 } O = {
@@ -118,6 +122,34 @@ static struct slot *slots;
 static uint8_t *disp;                // the capture frame as received (for received.ppm)
 static _Atomic int64_t disp_id = -1; // capture frame id once it arrived intact
 static _Atomic int64_t cap_id = -1;  // frame of this step whose packets are also copied to disp
+
+// --gif: frames gif_first + k * (cycle + 1), k < O.gif, kept downscaled by gif_f
+#define GIF_W 480
+static int gif_f, gif_w, gif_h;
+static int64_t gif_first = -1;
+static uint8_t *gif_rx;
+static struct gif_meta { _Atomic int ok; int64_t sent, intact, bad, lat_us; } *gif_meta;
+
+static int gif_index(int64_t id)
+{
+    int64_t k = id - gif_first, step = O.cycle + 1;
+    return (O.gif && gif_first >= 0 && k >= 0 && k % step == 0 && k / step < O.gif) ? (int)(k / step) : -1;
+}
+
+// the pixels of a packet that fall on the downscaled grid
+static void gif_copy(int k, uint32_t off, const uint8_t *src, uint32_t len)
+{
+    uint8_t *dst = gif_rx + (size_t)k * gif_w * gif_h * 3;
+    size_t rowb = (size_t)O.width * 3, end = (size_t)off + len;
+    for (size_t y = off / rowb; y <= (end - 1) / rowb; y++) {
+        if (y % gif_f || y / gif_f >= (size_t)gif_h) continue;
+        for (int x = 0; x < gif_w * gif_f; x += gif_f)
+            for (int ch = 0; ch < 3; ch++) {
+                size_t b = y * rowb + (size_t)x * 3 + ch;
+                if (b >= off && b < end) dst[((y / gif_f) * gif_w + x / gif_f) * 3 + ch] = src[b - off];
+            }
+    }
+}
 
 static struct rte_mempool *pool;
 static struct rte_ether_addr my_mac, fpga_mac;
@@ -172,6 +204,25 @@ static bool gen_differs(const uint8_t *p, uint32_t id, uint32_t off, uint32_t le
     return diff != 0;
 }
 
+// white text from font.h, glyphs scaled by an integer factor
+static void draw_text(uint8_t *f, int x0, int y0, const char *t, bool big, int scale)
+{
+    const char *chars = big ? font_big_chars : font_small_chars;
+    int gw = big ? FONT_BIG_W : FONT_SMALL_W, gh = big ? FONT_BIG_H : FONT_SMALL_H, rb = (gw + 7) / 8;
+    for (; *t; t++, x0 += gw * scale) {
+        const char *k = strchr(chars, *t);
+        if (!k || !*t) continue;
+        const uint8_t *g = big ? font_big[k - chars] : font_small[k - chars];
+        for (int y = 0; y < gh * scale; y++)
+            for (int x = 0; x < gw * scale; x++) {
+                int gx = x / scale, gy = y / scale, px = x0 + x, py = y0 + y;
+                if (px >= O.width || py >= O.height || !(g[gy * rb + gx / 8] & (0x80 >> (gx % 8)))) continue;
+                uint8_t *p = f + ((size_t)py * O.width + px) * 3;
+                p[0] = p[1] = p[2] = 255;
+            }
+    }
+}
+
 static void make_frame(uint8_t *f, int c)
 {
     int w = O.width, h = O.height, C = O.cycle;
@@ -189,14 +240,13 @@ static void make_frame(uint8_t *f, int c)
             p[0] = (uint8_t)cr; p[1] = (uint8_t)cg; p[2] = (uint8_t)cb;
         }
     }
-    // frame number as a row of blocks (binary), top left
-    for (int b = 0; b < 8; b++)
-        for (int y = h / 20; y < h / 20 + h / 30; y++)
-            for (int x = w / 20 + b * w / 40; x < w / 20 + b * w / 40 + w / 50; x++) {
-                uint8_t v = ((c >> (7 - b)) & 1) ? 255 : 30;
-                uint8_t *p = f + ((size_t)y * w + x) * 3;
-                p[0] = p[1] = p[2] = v;
-            }
+    // caption, top left: frame number in the cycle and the format (glyphs drawn for 2160 lines)
+    int sc = h >= 2160 ? h / 2160 : 1;
+    char t[64];
+    snprintf(t, sizeof(t), "FRAME %02d/%02d", c + 1, C);
+    draw_text(f, w / 20, h / 12, t, true, sc);
+    snprintf(t, sizeof(t), "%dx%d  RFSoC 4x2 UDP loopback", w, h);
+    draw_text(f, w / 20, h / 12 + (FONT_BIG_H + 20) * sc, t, false, sc);
 }
 
 static void save_ppm(const char *name, const uint8_t *f)
@@ -208,6 +258,43 @@ static void save_ppm(const char *name, const uint8_t *f)
     fprintf(fp, "P6\n%d %d\n255\n", O.width, O.height);
     fwrite(f, 1, (size_t)frame_bytes, fp);
     fclose(fp);
+}
+
+// out/gif/: rx_NNN.ppm (received, downscaled), tx_CC.ppm (the cycle frames, downscaled), meta.txt
+static void gif_save(int fps, const char *summary)
+{
+    char path[700];
+    snprintf(path, sizeof(path), "%s/gif", O.out);
+    mkdir(path, 0755);
+    uint8_t *small = malloc((size_t)gif_w * gif_h * 3);
+    for (int c = 0; c < O.cycle && small; c++) {
+        for (int y = 0; y < gif_h; y++)
+            for (int x = 0; x < gif_w; x++)
+                memcpy(small + ((size_t)y * gif_w + x) * 3, orig[c] + ((size_t)y * gif_f * O.width + (size_t)x * gif_f) * 3, 3);
+        snprintf(path, sizeof(path), "%s/gif/tx_%02d.ppm", O.out, c);
+        FILE *fp = fopen(path, "wb");
+        if (fp) { fprintf(fp, "P6\n%d %d\n255\n", gif_w, gif_h); fwrite(small, 1, (size_t)gif_w * gif_h * 3, fp); fclose(fp); }
+    }
+    free(small);
+    snprintf(path, sizeof(path), "%s/gif/meta.txt", O.out);
+    FILE *m = fopen(path, "w");
+    if (!m) return;
+    fprintf(m, "%dx%d %d fps cycle %d packets %d\n%s\n", O.width, O.height, fps, O.cycle, npkts, summary);
+    for (int k = 0; k < O.gif; k++) {
+        int ok = atomic_load(&gif_meta[k].ok);
+        int64_t id = gif_first + (int64_t)k * (O.cycle + 1);
+        fprintf(m, "%d %" PRId64 " %d %" PRId64 " %" PRId64 " %" PRId64 " %" PRId64 "\n", k, id, ok,
+                gif_meta[k].sent, gif_meta[k].intact, gif_meta[k].bad, gif_meta[k].lat_us);
+        if (ok == 0) continue;
+        snprintf(path, sizeof(path), "%s/gif/rx_%03d.ppm", O.out, k);
+        FILE *fp = fopen(path, "wb");
+        if (fp) {
+            fprintf(fp, "P6\n%d %d\n255\n", gif_w, gif_h);
+            fwrite(gif_rx + (size_t)k * gif_w * gif_h * 3, 1, (size_t)gif_w * gif_h * 3, fp);
+            fclose(fp);
+        }
+    }
+    fclose(m);
 }
 
 // ---------------------------------------------------------------- packet templates
@@ -310,6 +397,12 @@ static void frame_complete(struct slot *s)
     atomic_fetch_add(ok ? &st_ok : &st_bad, 1);
     int64_t id = atomic_load(&s->tag);
     if (ok && !O.light && id == atomic_load(&cap_id)) atomic_store(&disp_id, id);
+    int g = gif_index(id);
+    if (g >= 0) {
+        gif_meta[g].sent = atomic_load(&st_frames_sent); gif_meta[g].intact = atomic_load(&st_ok);
+        gif_meta[g].bad = atomic_load(&st_bad); gif_meta[g].lat_us = lat;
+        atomic_store(&gif_meta[g].ok, ok ? 1 : -1);
+    }
     atomic_store(&s->state, 0);
 }
 
@@ -337,6 +430,8 @@ static void on_packet(const uint8_t *p, uint32_t n)
         if (O.gen ? gen_differs(p + HDR, id, off, len) : memcmp(p + HDR, orig[id % O.cycle] + off, len) != 0)
             atomic_store(&s->bad, 1);
         if ((int64_t)id == atomic_load_explicit(&cap_id, memory_order_relaxed)) memcpy(disp + off, p + HDR, len);
+        int g = gif_index(id);
+        if (g >= 0) gif_copy(g, off, p + HDR, len);
     }
     if (atomic_load(&s->tag) != (int64_t)id || atomic_load(&s->state) != 1) return;
     if (atomic_fetch_or(&s->bits[idx >> 6], bit) & bit) return;
@@ -522,6 +617,7 @@ static void parse_args(int argc, char **argv)
         else if (!strcmp(a, "--rxd")) O.rxd = atoi(v);
         else if (!strcmp(a, "--drain-idle-ms")) O.drain_idle_ms = atof(v);
         else if (!strcmp(a, "--drain-max")) O.drain_max_s = atof(v);
+        else if (!strcmp(a, "--gif")) O.gif = atoi(v);
         else if (!strcmp(a, "--ref")) { if (!strcmp(v, "gen")) O.gen = true; else if (strcmp(v, "stored")) usage(); }
         else if (!strcmp(a, "--out")) snprintf(O.out, sizeof(O.out), "%s", v);
         else if (!strcmp(a, "--fps")) { O.fps[0] = atoi(v); O.nfps = 1; O.sweep = false; }
@@ -686,6 +782,8 @@ static struct result run_step(int fps)
     for (int s = 0; s < nslot; s++) { atomic_store(&slots[s].state, 0); atomic_store(&slots[s].tag, -1); }
     atomic_store(&stop_rx, false);
     atomic_store(&cap_id, (int64_t)(O.seconds * fps / 2));     // a frame from mid-run is kept for received.ppm
+    for (int k = 0; k < O.gif; k++) atomic_store(&gif_meta[k].ok, 0);
+    gif_first = fps;                                            // GIF frames from 1 s into the run
     atomic_store(&last_rx_tsc, 0);
     atomic_store(&t_tx_end_rx, UINT64_MAX);
 
@@ -809,6 +907,13 @@ int main(int argc, char **argv)
         atomic_store(&slots[s].tag, -1);
     }
     disp = malloc((size_t)frame_bytes);
+    if (O.gif) {
+        gif_f = O.width / GIF_W > 0 ? O.width / GIF_W : 1;
+        gif_w = O.width / gif_f; gif_h = O.height / gif_f;
+        gif_rx = calloc((size_t)O.gif * gif_w * gif_h * 3, 1);
+        gif_meta = calloc((size_t)O.gif, sizeof(*gif_meta));
+        if (!gif_rx || !gif_meta) rte_exit(1, "gif buffers\n");
+    }
     memset(disp, 0, (size_t)frame_bytes);                  // fault the pages in before the run
 
     port_init();
@@ -835,6 +940,7 @@ int main(int argc, char **argv)
         res[nres] = run_step(O.fps[i]);
         line(buf, sizeof(buf), &res[nres]);
         puts(buf);
+        if (O.gif) gif_save(res[nres].fps, buf);
         char dbuf[4096];
         detail(dbuf, sizeof(dbuf), &res[nres]);
         puts(dbuf);
