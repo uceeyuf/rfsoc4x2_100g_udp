@@ -1,0 +1,10 @@
+generating 20 frames of 3840x2160 ...
+link up, 100000 Mbps
+FPGA MAC 02:00:00:00:00:00
+all 16 flows echo
+FPGA 192.168.100.128 (+0..15) port 1234, 16 flows   payload 8956 B   2779 packets/frame   10 s per step   (DPDK, 4 TX / 8 RX cores, 4096 RX descriptors, inline compare, generated reference)
+3840x2160 @ 440 fps  frames  4400 sent  4400 intact 0 corrupted 0 incomplete   packets lost 0.0000 %   TX 87.74 / RX 87.74 Gbps   latency 2.4 / 2.5 ms
+    tx: schedule slip 0.1 ms   rx: late 2 (drain 0.0 ms)  stale 0  imissed 0  ierrors 0  nombuf 0
+    queues: q0 1531200 [f0 f2] q1 1531200 [f1 f3] q2 1522400 [f12 f14] q3 1522400 [f13 f15] q4 1531200 [f4 f6] q5 1531200 [f5 f7] q6 1531200 [f8 f10] q7 1526800 [f9 f11]
+Ceiling: 3840x2160 @ 440 fps, 87.74 Gbps each way, all frames intact
+host NIC rx_discards_phy +0   program wall time 11.496117839 s
